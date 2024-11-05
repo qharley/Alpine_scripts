@@ -41,9 +41,11 @@ done
 
 # Step 5: Define variables for Debian and Proxmox mirrors
 DEBIAN_PATH="/srv/debian-mirror"
-DEBIAN_HOST="deb.debian.org::debian"
+#DEBIAN_HOST="deb.debian.org::debian"
+DEBIAN_HOST="deb.debian.org"
 PROXMOX_PATH="/srv/proxmox-mirror"
 PROXMOX_HOST="download.proxmox.com::debian"
+#PROXMOX_HOST="download.proxmox.com"
 
 # Step 6: Create directories for Debian and Proxmox mirrors
 mkdir -p "${DEBIAN_PATH}"
@@ -51,16 +53,16 @@ mkdir -p "${PROXMOX_PATH}"
 
 # Step 7: Rsync the Debian repositories, including security
 echo "Syncing Debian repositories..."
-rsync -avz --delete "${DEBIAN_HOST}/dists/bookworm/main/" "${DEBIAN_PATH}/dists/bookworm/main/" || {
+rsync -vv -avz --delete "${DEBIAN_HOST}/dists/bookworm/main/" "${DEBIAN_PATH}/dists/bookworm/main/" || {
     echo "Rsync failed for Debian main repo" >&2
 }
-rsync -avz --delete "${DEBIAN_HOST}/dists/bookworm/contrib/" "${DEBIAN_PATH}/dists/bookworm/contrib/" || {
+rsync -vv -avz --delete "${DEBIAN_HOST}/dists/bookworm/contrib/" "${DEBIAN_PATH}/dists/bookworm/contrib/" || {
     echo "Rsync failed for Debian contrib repo" >&2
 }
-rsync -avz --delete "${DEBIAN_HOST}/dists/bookworm-updates/main/" "${DEBIAN_PATH}/dists/bookworm-updates/main/" || {
+rsync -vv -avz --delete "${DEBIAN_HOST}/dists/bookworm-updates/main/" "${DEBIAN_PATH}/dists/bookworm-updates/main/" || {
     echo "Rsync failed for Debian updates main repo" >&2
 }
-rsync -avz --delete "${DEBIAN_HOST}/dists/bookworm-updates/contrib/" "${DEBIAN_PATH}/dists/bookworm-updates/contrib/" || {
+rsync -vv -avz --delete "${DEBIAN_HOST}/dists/bookworm-updates/contrib/" "${DEBIAN_PATH}/dists/bookworm-updates/contrib/" || {
     echo "Rsync failed for Debian updates contrib repo" >&2
 }
 
