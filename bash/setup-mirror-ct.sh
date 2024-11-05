@@ -4,6 +4,8 @@
 # Author: qharley (Quentin Harley)
 # License: MIT
 
+# bash -c "$(wget -qLO - https://raw.githubusercontent.com/qharley/Alpine_scripts/refs/heads/main/bash/setup-mirror-ct.sh)"
+
 First section copied from: alpine.sh
 # Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
