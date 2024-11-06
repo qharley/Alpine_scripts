@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# wget https://raw.githubusercontent.com/qharley/Alpine_scripts/refs/heads/main/bash/setup-mirrors.sh
+# wget https://github.com/qharley/Alpine_scripts/raw/refs/heads/main/bash/setup-mirrors.sh
 # chmod +x setup-mirrors.sh
 # ./setup-mirrors.sh
 
