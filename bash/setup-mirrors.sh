@@ -1,8 +1,7 @@
 #!/bin/bash
+# Copyright (c) 2024 qharley
 
-# wget https://github.com/qharley/Alpine_scripts/raw/refs/heads/main/bash/setup-mirrors.sh
-# chmod +x setup-mirrors.sh
-# ./setup-mirrors.sh
+# wget https://github.com/qharley/Alpine_scripts/raw/refs/heads/main/bash/setup-mirrors.sh && chmod +x setup-mirrors.sh && ./setup-mirrors.sh
 
 # Step 1: Install necessary dependencies
 apt update
