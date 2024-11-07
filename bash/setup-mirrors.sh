@@ -109,7 +109,10 @@ chmod -R 755 /srv/alpine-mirror /srv/debian-mirror
 systemctl enable nginx
 systemctl start nginx
 
-# Step 11: Set up cron jobs for regular sync
+# Step 11: Test and reload Nginx configuration
+nginx -t && nginx -s reload
+
+# Step 12: Set up cron jobs for regular sync
 (crontab -l ; echo "3 3 * * * rsync -avz --delete ${MIRROR_HOST}/dists/${ALPINE_VERSIONS}/main/${ARCH} ${MIRROR_PATH}") | crontab -
 (crontab -l ; echo "0 4 * * * apt-mirror") | crontab -
 
