@@ -111,8 +111,50 @@ systemctl start nginx
 # Step 11: Test and reload Nginx configuration
 nginx -t && nginx -s reload
 
-# Step 12: Set up cron jobs for regular sync
-(crontab -l ; echo "3 3 * * * rsync -avz --delete ${MIRROR_HOST}/dists/${ALPINE_VERSIONS}/main/${ARCH} ${MIRROR_PATH}") | crontab -
-(crontab -l ; echo "0 4 * * * apt-mirror") | crontab -
+# Step 12: Create sync-alpine.sh script for cron job
+cat <<'EOF' > /usr/local/bin/sync-alpine.sh
+#!/bin/bash
 
+# Define variables for the Alpine mirror
+MIRROR_PATH="/srv/alpine-mirror"
+ALPINE_VERSIONS="v3.20"
+ARCH="x86_64"
+MIRROR_HOST="rsync.alpinelinux.org::alpine"
+LOCK_FILE="/var/lock/alpine-mirror-sync.lock"
+
+# Rsync the Alpine repositories
+for VERSION in $ALPINE_VERSIONS; do
+    while [ -f "$LOCK_FILE" ]; do
+        echo "Previous sync still in progress. Waiting..."
+        sleep 600
+    done
+
+    touch "$LOCK_FILE"
+    trap "rm -f $LOCK_FILE" EXIT
+
+    rsync -avz --delete "${MIRROR_HOST}/${VERSION}/main/${ARCH}/" "${MIRROR_PATH}/alpine/${VERSION}/main/${ARCH}/" || {
+        echo "Rsync failed for Alpine ${VERSION} main repo" >&2
+        continue
+    }
+    rsync -avz --delete "${MIRROR_HOST}/${VERSION}/community/${ARCH}/" "${MIRROR_PATH}/alpine/${VERSION}/community/${ARCH}/" || {
+        echo "Rsync failed for Alpine ${VERSION} community repo" >&2
+        continue
+    }
+
+    rm -f "$LOCK_FILE"
+done
+
+echo "Sync completed for Alpine repositories."
+
+# Lock file is automatically removed by the EXIT trap
+EOF
+
+# Make the sync-alpine.sh script executable
+chmod +x /usr/local/bin/sync-alpine.sh
+
+# Step 13: Set up cron job to run sync-alpine.sh daily at 3:00 AM
+(crontab -l ; echo "0 3 * * * /usr/local/bin/sync-alpine.sh >> /var/log/alpine_mirror.log 2>&1") | crontab -
+# Step 14: Set up cron job to run apt-mirror daily at 4:00 AM
+(crontab -l ; echo "0 4 * * * apt-mirror") | crontab -
+exho ""
 echo "Mirror setup for Alpine, Debian, and Proxmox repositories is complete!"
