@@ -156,5 +156,5 @@ chmod +x /usr/local/bin/sync-alpine.sh
 (crontab -l ; echo "0 3 * * * /usr/local/bin/sync-alpine.sh >> /var/log/alpine_mirror.log 2>&1") | crontab -
 # Step 14: Set up cron job to run apt-mirror daily at 4:00 AM
 (crontab -l ; echo "0 4 * * * apt-mirror") | crontab -
-exho ""
+echo ""
 echo "Mirror setup for Alpine, Debian, and Proxmox repositories is complete!"
