@@ -10,7 +10,7 @@ setup-xorg-base
 apk add openbox xterm terminus-font font-noto
 
 # Step 3: Add vdi user
-adduser vdi -p XPL@bT3rm
+adduser vdi -D
 addgroup vdi input
 addgroup vdi video
 
@@ -29,17 +29,41 @@ EOF
 apk add python3 py3-pip py3-pyside6 virt-viewer git
 
 # Step 6: Add pip packages as vdi user
-su vdi -p XPL@bT3rm
+su vdi
+cd ~
 pip install proxmoxer FreeSimpleGUI requests --break-system-packages
 
 # Step 7: Clone the VDIClient repository
 git clone https://github.com/qharley/PVE-VDIClient.git
-chmod +x ~/PVE-VDIClient/VDIClient.py
+chmod +x ~/PVE-VDIClient/vdiclient.py
 
 # Step 8: Set up the VDIClient service
 mkdir -p ~/.config/VDIClient
 cat <<EOF > ~/.config/VDIClient/config.ini
 [General]
+title = RSC EMEA XP Lab
+theme = DarkBlue
+icon = /home/vdi/vdiclient.ico
+logo = /home/vdi/vdiclient.png
+kiosk = False
+fullscreen = True
+inidebug = False
+guest_type = qemu
+show_reset = False
+show_power = False
+
+[Hosts.Proxmox]
+auth_backend = pve
+auth_totp = False
+tls_verify = False
+hostpool = { "192.168.42.20" : "8006" }
+
+[SpiceProxyRedirect]
+pve.bursal.lan:3128 = 192.168.42.20
+
+[AdditionalParameters]
+type = spice
+host-subject = OU=PVE, O=Proxmox Virtual Environment, CN=pve.bursar.lan
 
 EOF
 
