@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# bash -c "$(wget -qLO - https://raw.githubusercontent.com/qharley/Alpine_scripts/refs/heads/main/bash/setup-vdiview.sh)"
+
 # Step 1: Install necessary dependencies (if not already installed)
 apk update
 
@@ -28,7 +30,7 @@ apk add python3 py3-pip py3-pyside6 virt-viewer git
 
 # Step 6: Add pip packages as vdi user
 su vdi -p XPL@bT3rm
-pip install proxmoxer FreeSimpleGUI requests
+pip install proxmoxer FreeSimpleGUI requests --break-system-packages
 
 # Step 7: Clone the VDIClient repository
 git clone https://github.com/qharley/PVE-VDIClient.git
