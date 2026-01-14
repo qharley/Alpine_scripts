@@ -76,6 +76,11 @@ fi
 printf "TLS Host Subject (e.g., OU=PVE, O=Proxmox Virtual Environment, CN=pve.example.lan) [none]: "
 read HOST_SUBJECT
 
+# Autologin
+printf "Enable automatic login to VDI user? (yes/no) [yes]: "
+read ENABLE_AUTOLOGIN
+ENABLE_AUTOLOGIN=${ENABLE_AUTOLOGIN:-"yes"}
+
 echo ""
 echo "============================================"
 echo "Configuration Summary:"
@@ -85,6 +90,7 @@ echo "  Proxmox Host: $PVE_HOST:$PVE_PORT"
 echo "  Kiosk Mode: $VDI_KIOSK"
 echo "  Fullscreen: $VDI_FULLSCREEN"
 echo "  Guest Type: $VDI_GUEST_TYPE"
+echo "  Autologin: $ENABLE_AUTOLOGIN"
 if [ -n "$PROXY_REDIRECT_HOST" ]; then
     echo "  Proxy: $PROXY_REDIRECT_HOST = $PROXY_REDIRECT_TARGET"
 fi
@@ -330,23 +336,34 @@ echo ""
 
 exit
 
-# Replace a line in /etc/inittab to login as vdi autoamtically
-# replace the line:
-# tty1::respawn:/sbin/getty 38400 tty1
-# with:
-# tty1::respawn:/bin/login -f vdi
-echo "[Final] Configuring automatic login..."
-if ! sed -i 's|^tty1::respawn:/sbin/getty 38400 tty1$|tty1::respawn:/bin/login -f vdi|' /etc/inittab; then
-    echo "ERROR: Failed to configure automatic login in /etc/inittab"
-    exit 1
+# Configure automatic login if enabled
+if [ "$ENABLE_AUTOLOGIN" = "yes" ] || [ "$ENABLE_AUTOLOGIN" = "y" ]; then
+    echo "[Final] Configuring automatic login..."
+    # Replace the line:
+    # tty1::respawn:/sbin/getty 38400 tty1
+    # with:
+    # tty1::respawn:/bin/login -f vdi
+    if ! sed -i 's|^tty1::respawn:/sbin/getty 38400 tty1$|tty1::respawn:/bin/login -f vdi|' /etc/inittab; then
+        echo "ERROR: Failed to configure automatic login in /etc/inittab"
+        exit 1
+    fi
+    echo "✓ Automatic login configured"
+else
+    echo "[Final] Skipping automatic login configuration"
+    echo "ℹ  Note: You will need to manually login as 'vdi' user after reboot"
 fi
-echo "✓ Automatic login configured"
 echo ""
 echo "============================================"
 echo "  Installation Complete!"
 echo "============================================"
 echo "PVE VDI View setup is complete!"
-echo "Reboot the system to start the VDI Client."
+if [ "$ENABLE_AUTOLOGIN" = "yes" ] || [ "$ENABLE_AUTOLOGIN" = "y" ]; then
+    echo "The system will automatically login to the VDI Client on reboot."
+else
+    echo "Login as 'vdi' user after reboot to start the VDI Client."
+fi
 echo ""
+echo "To reboot now, run: reboot"
+echo "============================================"
 echo "To reboot now, run: reboot"
 echo "============================================"
