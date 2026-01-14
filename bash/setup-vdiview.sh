@@ -72,7 +72,7 @@ if [ -n "$PROXY_REDIRECT_HOST" ]; then
     read PROXY_REDIRECT_TARGET
     PROXY_REDIRECT_TARGET=${PROXY_REDIRECT_TARGET:-"$PVE_HOST"}
 fi
-
+set
 # Host Subject (Optional)
 printf "TLS Host Subject (e.g., OU=PVE, O=Proxmox Virtual Environment, CN=pve.example.lan) [none]: "
 read HOST_SUBJECT
@@ -104,6 +104,38 @@ echo ""
 echo "Starting installation..."
 echo ""
 
+# Pre-installation checks
+echo "[0/9] Performing pre-installation checks..."
+
+# Check if running as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "ERROR: This script must be run as root"
+    exit 1
+fi
+
+# Check if /dev is properly mounted as devtmpfs
+if ! mount | grep -q "devtmpfs on /dev"; then
+    echo "WARNING: /dev is not mounted as devtmpfs"
+    echo "This is required for udev and XORG to function properly."
+    echo ""
+    echo "To fix this issue:"
+    echo "  1. Edit /etc/fstab and add: devtmpfs  /dev  devtmpfs  defaults  0  0"
+    echo "  2. Reboot the system"
+    echo "  3. Run this script again"
+    echo ""
+    printf "Continue anyway? (not recommended) (yes/no) [no]: "
+    read CONTINUE_WITHOUT_DEVTMPFS
+    CONTINUE_WITHOUT_DEVTMPFS=${CONTINUE_WITHOUT_DEVTMPFS:-"no"}
+    if [ "$CONTINUE_WITHOUT_DEVTMPFS" != "yes" ] && [ "$CONTINUE_WITHOUT_DEVTMPFS" != "y" ]; then
+        echo "Installation aborted. Please configure devtmpfs and try again."
+        exit 1
+    fi
+    echo "WARNING: Continuing without proper /dev mount. System may not function correctly."
+fi
+
+echo "✓ Pre-installation checks completed"
+echo ""
+
 # Step 1: Install necessary dependencies (if not already installed)
 echo "[1/9] Updating package repositories..."
 if ! apk update; then
@@ -117,6 +149,12 @@ echo ""
 echo "[2/9] Setting up XORG base and window manager..."
 if ! setup-xorg-base; then
     echo "ERROR: Failed to setup XORG base"
+    echo ""
+    echo "This is likely because /dev is not properly configured as devtmpfs."
+    echo "Please ensure your system meets the requirements:"
+    echo "  - /dev must be mounted as devtmpfs"
+    echo "  - System must be running on physical hardware or a VM (not a container)"
+    echo "  - Kernel must support devtmpfs"
     exit 1
 fi
 if ! apk add openbox xterm terminus-font font-noto; then
