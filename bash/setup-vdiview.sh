@@ -72,7 +72,6 @@ if [ -n "$PROXY_REDIRECT_HOST" ]; then
     read PROXY_REDIRECT_TARGET
     PROXY_REDIRECT_TARGET=${PROXY_REDIRECT_TARGET:-"$PVE_HOST"}
 fi
-set
 # Host Subject (Optional)
 printf "TLS Host Subject (e.g., OU=PVE, O=Proxmox Virtual Environment, CN=pve.example.lan) [none]: "
 read HOST_SUBJECT
