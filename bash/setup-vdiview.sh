@@ -105,19 +105,47 @@ echo "Starting installation..."
 echo ""
 
 # Step 1: Install necessary dependencies (if not already installed)
-apk update
+echo "[1/9] Updating package repositories..."
+if ! apk update; then
+    echo "ERROR: Failed to update package repositories"
+    exit 1
+fi
+echo "✓ Package repositories updated successfully"
+echo ""
 
 # Step 2: Setup XORG base
-setup-xorg-base
-apk add openbox xterm terminus-font font-noto
+echo "[2/9] Setting up XORG base and window manager..."
+if ! setup-xorg-base; then
+    echo "ERROR: Failed to setup XORG base"
+    exit 1
+fi
+if ! apk add openbox xterm terminus-font font-noto; then
+    echo "ERROR: Failed to install XORG packages"
+    exit 1
+fi
+echo "✓ XORG and Openbox installed successfully"
+echo ""
 
 # Step 3: Add vdi user
-adduser vdi -D
-addgroup vdi input
-addgroup vdi video
+echo "[3/9] Creating VDI user and configuring groups..."
+if ! adduser vdi -D; then
+    echo "ERROR: Failed to create vdi user"
+    exit 1
+fi
+if ! addgroup vdi input; then
+    echo "ERROR: Failed to add vdi user to input group"
+    exit 1
+fi
+if ! addgroup vdi video; then
+    echo "ERROR: Failed to add vdi user to video group"
+    exit 1
+fi
+echo "✓ VDI user created and added to input/video groups"
+echo ""
 
 # Step 4: change /etc/motd to the bespoke welcome message:
-cat <<EOF > /etc/motd
+echo "[4/9] Configuring system welcome message..."
+if ! cat <<EOF > /etc/motd
 Welcome to Alpine!
 
 The Alpine Wiki contains a large amount of how-to guides and general
@@ -126,22 +154,58 @@ See <http://wiki.alpinelinux.org/>.
 
 If you see this message and did not expect it, you should reboot the system.
 EOF
+then
+    echo "ERROR: Failed to update /etc/motd"
+    exit 1
+fi
+echo "✓ Welcome message configured"
+echo ""
 
 #step 5: Add the vdi user dependencies
-apk add python3 py3-pip py3-pyside6 virt-viewer git
+echo "[5/9] Installing Python and VDI dependencies..."
+if ! apk add python3 py3-pip py3-pyside6 virt-viewer git; then
+    echo "ERROR: Failed to install Python and VDI dependencies"
+    exit 1
+fi
+echo "✓ Python and VDI dependencies installed successfully"
+echo ""
 
 # Step 6: Add pip packages as vdi user
-su vdi
-cd ~
-pip install proxmoxer FreeSimpleGUI requests --break-system-packages
+echo "[6/9] Installing Python packages for VDI user..."
+su vdi <<'VDIUSER'
+cd ~ || exit 1
+if ! pip install proxmoxer FreeSimpleGUI requests --break-system-packages; then
+    echo "ERROR: Failed to install Python packages"
+    exit 1
+fi
+echo "✓ Python packages installed successfully"
+VDIUSER
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed during Python package installation"
+    exit 1
+fi
+echo ""
 
 # Step 7: Clone the VDIClient repository
-git clone https://github.com/qharley/PVE-VDIClient.git
-chmod +x ~/PVE-VDIClient/vdiclient.py
+echo "[7/9] Cloning VDIClient repository..."
+if ! git clone https://github.com/qharley/PVE-VDIClient.git; then
+    echo "ERROR: Failed to clone VDIClient repository"
+    exit 1
+fi
+if ! chmod +x ~/PVE-VDIClient/vdiclient.py; then
+    echo "ERROR: Failed to set execute permissions on vdiclient.py"
+    exit 1
+fi
+echo "✓ VDIClient repository cloned successfully"
+echo ""
 
 # Step 8: Set up the VDIClient service
-mkdir -p ~/.config/VDIClient
-cat <<EOF > ~/.config/VDIClient/config.ini
+echo "[8/9] Configuring VDIClient..."
+if ! mkdir -p ~/.config/VDIClient; then
+    echo "ERROR: Failed to create VDIClient config directory"
+    exit 1
+fi
+if ! cat <<EOF > ~/.config/VDIClient/config.ini
 [General]
 title = $VDI_TITLE
 theme = $VDI_THEME
@@ -160,38 +224,72 @@ auth_totp = False
 tls_verify = $PVE_TLS_VERIFY
 hostpool = { "$PVE_HOST" : "$PVE_PORT" }
 EOF
+then
+    echo "ERROR: Failed to create VDIClient config file"
+    exit 1
+fi
 
 # Add SpiceProxyRedirect section if configured
 if [ -n "$PROXY_REDIRECT_HOST" ]; then
-    cat <<EOF >> ~/.config/VDIClient/config.ini
+    echo "  Adding SPICE proxy configuration..."
+    if ! cat <<EOF >> ~/.config/VDIClient/config.ini
 
 [SpiceProxyRedirect]
 $PROXY_REDIRECT_HOST = $PROXY_REDIRECT_TARGET
 EOF
+    then
+        echo "ERROR: Failed to add proxy configuration"
+        exit 1
+    fi
 fi
 
 # Add AdditionalParameters section if host-subject is configured
 if [ -n "$HOST_SUBJECT" ]; then
-    cat <<EOF >> ~/.config/VDIClient/config.ini
+    echo "  Adding TLS host subject configuration..."
+    if ! cat <<EOF >> ~/.config/VDIClient/config.ini
 
 [AdditionalParameters]
 type = spice
 host-subject = $HOST_SUBJECT
 EOF
+    then
+        echo "ERROR: Failed to add host subject configuration"
+        exit 1
+    fi
 fi
+echo "✓ VDIClient configured successfully"
+echo ""
 
 # Step 9: Set up Openbox configuration
-echo 'exec startx' >> ~/.profile
-echo 'exec openbox-session' >> ~/.xinitrc
-cp -r /etc/xdg/openbox ~/.config
-rm ~/.config/openbox/autostart
-cat <<EOF > ~/.config/openbox/autostart
+echo "[9/9] Configuring Openbox window manager..."
+if ! echo 'exec startx' >> ~/.profile; then
+    echo "ERROR: Failed to update ~/.profile"
+    exit 1
+fi
+if ! echo 'exec openbox-session' >> ~/.xinitrc; then
+    echo "ERROR: Failed to update ~/.xinitrc"
+    exit 1
+fi
+if ! cp -r /etc/xdg/openbox ~/.config; then
+    echo "ERROR: Failed to copy Openbox configuration"
+    exit 1
+fi
+if ! rm ~/.config/openbox/autostart; then
+    echo "WARNING: Failed to remove default autostart file (may not exist)"
+fi
+if ! cat <<EOF > ~/.config/openbox/autostart
 #!/bin/sh
 while true
 do
     ~/PVE-VDIClient/vdiclient.py
 done
 EOF
+then
+    echo "ERROR: Failed to create Openbox autostart script"
+    exit 1
+fi
+echo "✓ Openbox configured successfully"
+echo ""
 
 exit
 
@@ -200,6 +298,18 @@ exit
 # tty1::respawn:/sbin/getty 38400 tty1
 # with:
 # tty1::respawn:/bin/login -f vdi
-sed -i 's|^tty1::respawn:/sbin/getty 38400 tty1$|tty1::respawn:/bin/login -f vdi|' /etc/inittab
-
-echo "PVE VDI View setup is complete!  Reboot to start the VDI Client."
+echo "[Final] Configuring automatic login..."
+if ! sed -i 's|^tty1::respawn:/sbin/getty 38400 tty1$|tty1::respawn:/bin/login -f vdi|' /etc/inittab; then
+    echo "ERROR: Failed to configure automatic login in /etc/inittab"
+    exit 1
+fi
+echo "✓ Automatic login configured"
+echo ""
+echo "============================================"
+echo "  Installation Complete!"
+echo "============================================"
+echo "PVE VDI View setup is complete!"
+echo "Reboot the system to start the VDI Client."
+echo ""
+echo "To reboot now, run: reboot"
+echo "============================================"
