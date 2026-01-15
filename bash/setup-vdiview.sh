@@ -340,7 +340,7 @@ fi
 echo "✓ Openbox configured successfully"
 echo ""
 
-exit
+#exit
 
 # Configure automatic login if enabled
 if [ "$ENABLE_AUTOLOGIN" = "yes" ] || [ "$ENABLE_AUTOLOGIN" = "y" ]; then
@@ -373,3 +373,5 @@ echo "To reboot now, run: reboot"
 echo "============================================"
 echo "To reboot now, run: reboot"
 echo "============================================"
+
+exit 0
