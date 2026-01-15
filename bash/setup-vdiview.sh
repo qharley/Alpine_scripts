@@ -305,7 +305,13 @@ echo ""
 
 # Step 9: Set up Openbox configuration
 echo "[9/9] Configuring Openbox window manager..."
-if ! echo 'exec startx' >> ~/.profile; then
+if ! cat <<'PROFILE_EOF' >> ~/.profile
+# Start X only when logged in as vdi user on tty1
+if [ "$(whoami)" = "vdi" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    exec startx
+fi
+PROFILE_EOF
+then
     echo "ERROR: Failed to update ~/.profile"
     exit 1
 fi
